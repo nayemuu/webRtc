@@ -1,8 +1,11 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 const Home = () => {
   const myStreamRef = useRef();
+  const mediaRecorderRef = useRef(null); // Use a ref for mediaRecorder
   let mediaStream = null;
+  const [recordedChunks, setRecordedChunks] = useState([]);
+  const [isRecording, setIsRecording] = useState(false); // Track recording state
 
   const getMicAndCamera = async () => {
     const constraints = {
@@ -10,43 +13,100 @@ const Home = () => {
       video: true,
     };
 
-    // console.log("myStreamRef = ", myStreamRef.current);
-    console.log("navigator.mediaDevices = ", navigator.mediaDevices);
-
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log("mediaStream = ", mediaStream);
-
       // Set the video element's srcObject to the stream
       if (myStreamRef.current) {
         myStreamRef.current.srcObject = mediaStream;
       }
 
-      if (mediaStream) {
-        const tracks = mediaStream.getTracks();
-        console.log("tracks = ", tracks);
-      }
+      // Initialize the MediaRecorder and store it in the ref
+      mediaRecorderRef.current = new MediaRecorder(mediaStream);
+
+      // Capture data in chunks when recording
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setRecordedChunks((prev) => [...prev, event.data]);
+        }
+      };
     } catch (err) {
       console.error("Error accessing media devices:", err);
+    }
+  };
+
+  const startRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+      console.log("Recording started");
+    } else {
+      alert("No MediaStream Found!");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      console.log("Recording stopped");
+    } else {
+      alert("No MediaStream Found!");
+    }
+  };
+
+  const pauseRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.pause();
+      setIsRecording(false);
+      console.log("Recording paused");
+    } else {
+      alert("No recording is in progress!");
+    }
+  };
+
+  const resumeRecording = () => {
+    if (mediaRecorderRef.current && !isRecording) {
+      mediaRecorderRef.current.resume();
+      setIsRecording(true);
+      console.log("Recording resumed");
+    } else {
+      alert("No recording is paused!");
+    }
+  };
+
+  const downloadRecording = () => {
+    if (recordedChunks.length) {
+      const blob = new Blob(recordedChunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = "recording.webm";
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      setRecordedChunks([]); // Clear the recorded chunks
     }
   };
 
   // Cleanup function to stop the mediaStream when the component unmounts
   useEffect(() => {
     return () => {
-      // Cleanup on component unmount
-      // mediaStream is a local variable, so React doesn't track it across renders
-      // Therefore, there's no point in adding it to the dependency array
       if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
+        mediaStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []); // No dependencies: mediaStream is not part of state, so no need to include it here
+  }, []);
 
   return (
     <div>
-      <p>WebRtc</p>
-      <button onClick={getMicAndCamera}>stream</button>
+      <p>WebRTC with MediaRecorder</p>
+      <button onClick={getMicAndCamera}>Start Stream</button>
+      <button onClick={startRecording}>Start Recording</button>
+      {/* <button onClick={stopRecording}>Stop Recording</button> */}
+      <button onClick={pauseRecording}>Pause Recording</button>
+      <button onClick={resumeRecording}>Resume Recording</button>
+      <button onClick={downloadRecording}>Download Recording</button>
       <br /> <br /> <br />
       <video playsInline autoPlay ref={myStreamRef} />
     </div>
