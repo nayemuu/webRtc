@@ -1,8 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 
 const Home = () => {
   const myStreamRef = useRef();
-  let stream = null;
+  let mediaStream = null;
 
   const getMicAndCamera = async () => {
     const constraints = {
@@ -10,41 +10,45 @@ const Home = () => {
       video: true,
     };
 
-    console.log("myStreamRef = ", myStreamRef.current);
+    // console.log("myStreamRef = ", myStreamRef.current);
+    console.log("navigator.mediaDevices = ", navigator.mediaDevices);
 
     try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log("stream = ", stream);
+      mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log("mediaStream = ", mediaStream);
 
       // Set the video element's srcObject to the stream
       if (myStreamRef.current) {
-        myStreamRef.current.srcObject = stream;
+        myStreamRef.current.srcObject = mediaStream;
+      }
+
+      if (mediaStream) {
+        const tracks = mediaStream.getTracks();
+        console.log("tracks = ", tracks);
       }
     } catch (err) {
       console.error("Error accessing media devices:", err);
     }
   };
 
-  // Cleanup function to stop the stream when the component unmounts
+  // Cleanup function to stop the mediaStream when the component unmounts
   useEffect(() => {
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      // Cleanup on component unmount
+      // mediaStream is a local variable, so React doesn't track it across renders
+      // Therefore, there's no point in adding it to the dependency array
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop()); // Stop all tracks
       }
     };
-  }, [stream]);
+  }, []); // No dependencies: mediaStream is not part of state, so no need to include it here
 
   return (
     <div>
-      <p>yoo</p>
+      <p>WebRtc</p>
       <button onClick={getMicAndCamera}>stream</button>
       <br /> <br /> <br />
-      <video
-        playsinline
-        className="w-[900px] h-[600px]"
-        autoPlay
-        ref={myStreamRef}
-      />
+      <video playsInline autoPlay ref={myStreamRef} />
     </div>
   );
 };
