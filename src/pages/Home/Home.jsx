@@ -75,6 +75,7 @@ const Home = () => {
   };
 
   const downloadRecording = () => {
+    // console.log("download");
     if (recordedChunks.length) {
       const blob = new Blob(recordedChunks, { type: "video/webm" });
       const url = URL.createObjectURL(blob);
@@ -99,16 +100,56 @@ const Home = () => {
   }, []);
 
   return (
-    <div>
-      <p>WebRTC with MediaRecorder</p>
-      <button onClick={getMicAndCamera}>Start Stream</button>
-      <button onClick={startRecording}>Start Recording</button>
-      {/* <button onClick={stopRecording}>Stop Recording</button> */}
-      <button onClick={pauseRecording}>Pause Recording</button>
-      <button onClick={resumeRecording}>Resume Recording</button>
-      <button onClick={downloadRecording}>Download Recording</button>
-      <br /> <br /> <br />
-      <video playsInline autoPlay ref={myStreamRef} />
+    <div className="container">
+      <div className="text-xl font-bold text-center my-5">
+        WebRTC with MediaRecorder
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
+          onClick={getMicAndCamera}
+        >
+          Start Stream
+        </button>
+
+        <button
+          type="button"
+          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
+          onClick={startRecording}
+        >
+          Start Recording
+        </button>
+        {/* <button onClick={stopRecording}>Stop Recording</button> */}
+
+        <button
+          type="button"
+          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
+          onClick={pauseRecording}
+        >
+          Pause Recording
+        </button>
+
+        <button
+          type="button"
+          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
+          onClick={resumeRecording}
+        >
+          Resume Recording
+        </button>
+
+        <button
+          type="button"
+          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
+          onClick={downloadRecording}
+        >
+          Download Recording
+        </button>
+      </div>
+
+      <div className="flex justify-center my-4">
+        <video playsInline autoPlay ref={myStreamRef} />
+      </div>
     </div>
   );
 };
