@@ -16,7 +16,7 @@ const Button = ({ handleClick, disable = false, active, children }) => {
     <button
       type="button"
       className={`text-white rounded-[5px] px-5 py-1 text-lg ${myClASS}`}
-      disable={disable ? "true" : undefined}
+      disabled={disable}
       onClick={handleClick}
     >
       {children}
