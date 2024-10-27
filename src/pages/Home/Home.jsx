@@ -1,11 +1,14 @@
 import { useRef, useEffect, useState } from "react";
+import Button from "../../Components/reuseable/Button/Button";
 
 const Home = () => {
   const myStreamRef = useRef();
   const mediaRecorderRef = useRef(null); // Use a ref for mediaRecorder
-  let mediaStream = null;
+
+  const [mediaStream, setMediaStream] = useState(null);
   const [recordedChunks, setRecordedChunks] = useState([]);
   const [isRecording, setIsRecording] = useState(false); // Track recording state
+  const [isMyMediaResourceActive, setIsMyMediaResourceActive] = useState(false);
 
   const getMicAndCamera = async () => {
     const constraints = {
@@ -14,20 +17,34 @@ const Home = () => {
     };
 
     try {
-      mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setMediaStream(stream);
+      setIsMyMediaResourceActive(true);
       // Set the video element's srcObject to the stream
       if (myStreamRef.current) {
-        myStreamRef.current.srcObject = mediaStream;
+        myStreamRef.current.srcObject = stream;
       }
 
       // Initialize the MediaRecorder and store it in the ref
-      mediaRecorderRef.current = new MediaRecorder(mediaStream);
+      mediaRecorderRef.current = new MediaRecorder(stream);
 
-      // Capture data in chunks when recording
+      //Error Handling for MediaRecorder
+      mediaRecorderRef.current.onerror = (event) => {
+        console.error("MediaRecorder error:", event.error);
+      };
+
       mediaRecorderRef.current.ondataavailable = (event) => {
+        console.log("Data available: ", event.data.size);
         if (event.data.size > 0) {
           setRecordedChunks((prev) => [...prev, event.data]);
         }
+      };
+
+      mediaRecorderRef.current.onstart = () => {
+        console.log("Recording started");
+      };
+      mediaRecorderRef.current.onstop = () => {
+        console.log("Recording stopped");
       };
     } catch (err) {
       console.error("Error accessing media devices:", err);
@@ -35,10 +52,10 @@ const Home = () => {
   };
 
   const startRecording = () => {
+    console.log("mediaRecorderRef.current = ", mediaRecorderRef.current);
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      console.log("Recording started");
     } else {
       alert("No MediaStream Found!");
     }
@@ -48,7 +65,6 @@ const Home = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
-      console.log("Recording stopped");
     } else {
       alert("No MediaStream Found!");
     }
@@ -105,22 +121,33 @@ const Home = () => {
         WebRTC with MediaRecorder
       </div>
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
           className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
-          onClick={getMicAndCamera}
+          handleClick={getMicAndCamera}
+          active={isMyMediaResourceActive}
         >
           Start Stream
-        </button>
+        </Button>
+
+        <Button
+          type="button"
+          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
+          handleClick={startRecording}
+          disable={!isMyMediaResourceActive}
+          active={isRecording}
+        >
+          Start Recording
+        </Button>
+        {/* <button onClick={stopRecording}>Stop Recording</button> */}
 
         <button
           type="button"
           className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
-          onClick={startRecording}
+          onClick={stopRecording}
         >
-          Start Recording
+          Stop Recording
         </button>
-        {/* <button onClick={stopRecording}>Stop Recording</button> */}
 
         <button
           type="button"
