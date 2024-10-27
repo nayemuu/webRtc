@@ -4,11 +4,11 @@ import Button from "../../Components/reuseable/Button/Button";
 const Home = () => {
   const myStreamRef = useRef();
   const mediaRecorderRef = useRef(null); // Use a ref for mediaRecorder
-
-  const [mediaStream, setMediaStream] = useState(null);
   const [recordedChunks, setRecordedChunks] = useState([]);
   const [isRecording, setIsRecording] = useState(false); // Track recording state
+  const [isRecordingPushed, setIsRecordingPushed] = useState(false);
   const [isMyMediaResourceActive, setIsMyMediaResourceActive] = useState(false);
+  const [mediaStream, setMediaStream] = useState(null);
 
   const getMicAndCamera = async () => {
     const constraints = {
@@ -18,12 +18,14 @@ const Home = () => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setMediaStream(stream);
-      setIsMyMediaResourceActive(true);
+      setMediaStream(stream); // Update state with the acquired media stream
+
       // Set the video element's srcObject to the stream
       if (myStreamRef.current) {
         myStreamRef.current.srcObject = stream;
       }
+
+      setIsMyMediaResourceActive(true);
 
       // Initialize the MediaRecorder and store it in the ref
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -41,10 +43,22 @@ const Home = () => {
       };
 
       mediaRecorderRef.current.onstart = () => {
+        setIsRecording(true);
         console.log("Recording started");
       };
+
       mediaRecorderRef.current.onstop = () => {
+        setIsRecording(false);
         console.log("Recording stopped");
+      };
+
+      mediaRecorderRef.current.onpause = () => {
+        console.log("Recording paused");
+      };
+
+      mediaRecorderRef.current.onresume = () => {
+        setIsRecordingPushed(false);
+        console.log("Recording resumed");
       };
     } catch (err) {
       console.error("Error accessing media devices:", err);
@@ -52,10 +66,9 @@ const Home = () => {
   };
 
   const startRecording = () => {
-    console.log("mediaRecorderRef.current = ", mediaRecorderRef.current);
+    // console.log("mediaRecorderRef.current = ", mediaRecorderRef.current);
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.start();
-      setIsRecording(true);
     } else {
       alert("No MediaStream Found!");
     }
@@ -64,7 +77,6 @@ const Home = () => {
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
     } else {
       alert("No MediaStream Found!");
     }
@@ -73,18 +85,16 @@ const Home = () => {
   const pauseRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.pause();
-      setIsRecording(false);
-      console.log("Recording paused");
+      setIsRecordingPushed(true);
     } else {
       alert("No recording is in progress!");
     }
   };
 
   const resumeRecording = () => {
-    if (mediaRecorderRef.current && !isRecording) {
+    if (mediaRecorderRef.current && isRecording && isRecordingPushed) {
       mediaRecorderRef.current.resume();
-      setIsRecording(true);
-      console.log("Recording resumed");
+      setIsRecordingPushed(false);
     } else {
       alert("No recording is paused!");
     }
@@ -106,12 +116,22 @@ const Home = () => {
     }
   };
 
+  const stopMediaStream = () => {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((track) => track.stop());
+      myStreamRef.current.srcObject = null; // Clear the video element
+      setIsMyMediaResourceActive(false);
+      console.log("Media stream stopped");
+    } else {
+      console.warn("No media stream to stop");
+    }
+  };
+
   // Cleanup function to stop the mediaStream when the component unmounts
   useEffect(() => {
     return () => {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach((track) => track.stop());
-      }
+      console.log("Cleaning up...");
+      stopMediaStream(); // Ensure media stream is stopped on unmount
     };
   }, []);
 
@@ -123,7 +143,6 @@ const Home = () => {
       <div className="flex gap-2">
         <Button
           type="button"
-          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
           handleClick={getMicAndCamera}
           active={isMyMediaResourceActive}
         >
@@ -132,46 +151,55 @@ const Home = () => {
 
         <Button
           type="button"
-          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
-          handleClick={startRecording}
+          handleClick={isRecording ? stopRecording : startRecording}
           disable={!isMyMediaResourceActive}
-          active={isRecording}
         >
-          Start Recording
+          {isRecording ? "Stop Recording" : "Start Recording"}
         </Button>
-        {/* <button onClick={stopRecording}>Stop Recording</button> */}
 
-        <button
+        <Button
           type="button"
-          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
-          onClick={stopRecording}
-        >
-          Stop Recording
-        </button>
-
-        <button
-          type="button"
-          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
-          onClick={pauseRecording}
+          handleClick={pauseRecording}
+          disable={
+            !isRecording
+              ? true
+              : isRecording && !isRecordingPushed
+              ? false
+              : true
+          }
         >
           Pause Recording
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
-          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
-          onClick={resumeRecording}
+          handleClick={resumeRecording}
+          disable={
+            !isRecording
+              ? true
+              : isRecording && isRecordingPushed
+              ? false
+              : true
+          }
         >
           Resume Recording
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
-          className="bg-gradient-to-b from-[#D13F96] to-[#833586] text-white rounded-[5px] px-5 py-1 text-lg"
-          onClick={downloadRecording}
+          handleClick={downloadRecording}
+          disable={recordedChunks.length ? false : true}
         >
           Download Recording
-        </button>
+        </Button>
+
+        <Button
+          type="button"
+          handleClick={stopMediaStream}
+          disable={!isMyMediaResourceActive}
+        >
+          Stop Stream
+        </Button>
       </div>
 
       <div className="flex justify-center my-4">
@@ -182,3 +210,5 @@ const Home = () => {
 };
 
 export default Home;
+
+//make a stop maidaStream Handler

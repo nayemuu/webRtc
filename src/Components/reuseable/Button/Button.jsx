@@ -1,8 +1,6 @@
 import React from "react";
 
 const Button = ({ handleClick, disable = false, active, children }) => {
-  console.log("active = ", active);
-
   let myClASS = "";
   if (active) {
     myClASS = "bg-green-500";
