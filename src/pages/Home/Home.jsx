@@ -117,7 +117,7 @@ const Home = () => {
   };
 
   const stopMediaStream = () => {
-    if (mediaStream) {
+    if (mediaStream && !isRecording) {
       mediaStream.getTracks().forEach((track) => track.stop());
       myStreamRef.current.srcObject = null; // Clear the video element
       setIsMyMediaResourceActive(false);
@@ -196,7 +196,7 @@ const Home = () => {
         <Button
           type="button"
           handleClick={stopMediaStream}
-          disable={!isMyMediaResourceActive}
+          disable={!isMyMediaResourceActive || isRecording}
         >
           Stop Stream
         </Button>
